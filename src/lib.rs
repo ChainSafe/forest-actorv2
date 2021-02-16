@@ -33,16 +33,6 @@ pub type Map<'bs, BS, V> = Hamt<'bs, BS, V, BytesKey>;
 /// Deal weight
 pub type DealWeight = BigInt;
 
-/// Used when invocation requires parameters to be an empty array of bytes
-pub fn check_empty_params(params: &Serialized) -> Result<(), ActorError> {
-    if !params.is_empty() {
-        Err(actor_error!(ErrSerialization;
-                "params expected to be empty, was: {}", base64::encode(params.bytes())))
-    } else {
-        Ok(())
-    }
-}
-
 /// Create a hamt configured with constant bit width.
 #[inline]
 pub fn make_map<BS, V>(store: &'_ BS) -> Map<'_, BS, V>
