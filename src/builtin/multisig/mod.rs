@@ -591,6 +591,7 @@ where
     let mut out = Serialized::default();
     let mut code = ExitCode::Ok;
     let mut applied = false;
+    let nv = rt.network_version();
     let threshold_met = txn.approved.len() >= st.num_approvals_threshold;
     if threshold_met {
         st.check_available(rt.current_balance()?, &txn.value, rt.curr_epoch())
@@ -617,20 +618,32 @@ where
                     )
                 })?;
 
-            ptx.delete(&txn_id.key())
-                .map_err(|e| {
+            let mut should_delete = true;
+            if nv >= NetworkVersion::V6 {
+                let txn_exists = ptx.contains_key(&txn_id.key()).map_err(|e| {
                     e.downcast_default(
                         ExitCode::ErrIllegalState,
-                        "failed to delete transaction for cleanup",
-                    )
-                })?
-                .ok_or_else(|| {
-                    actor_error!(
-                        ErrIllegalState,
-                        "failed to delete transaction for cleanup: does not exist"
+                        "failed to check for existance of transaction for cleanup",
                     )
                 })?;
+                should_delete = txn_exists;
+            }
 
+            if should_delete {
+                ptx.delete(&txn_id.key())
+                    .map_err(|e| {
+                        e.downcast_default(
+                            ExitCode::ErrIllegalState,
+                            "failed to delete transaction for cleanup",
+                        )
+                    })?
+                    .ok_or_else(|| {
+                        actor_error!(
+                            ErrIllegalState,
+                            "failed to delete transaction for cleanup: does not exist"
+                        )
+                    })?;
+            }
             st.pending_txs = ptx.flush().map_err(|e| {
                 e.downcast_default(
                     ExitCode::ErrIllegalState,
