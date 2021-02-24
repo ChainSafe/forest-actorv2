@@ -2845,7 +2845,9 @@ where
                     rt.curr_epoch(),
                     &rt.current_balance()?,
                 )
-                .map_err(|e| actor_error!(ErrIllegalState, "failed to repay penalty: {}", e))?;
+                .map_err(|e| {
+                    e.downcast_default(ExitCode::ErrIllegalState, "failed to repay penalty")
+                })?;
 
             penalty = &penalty_from_vesting + penalty_from_balance;
             pledge_delta -= penalty_from_vesting;
@@ -2948,7 +2950,9 @@ where
                 rt.curr_epoch(),
                 &rt.current_balance()?,
             )
-            .map_err(|e| actor_error!(ErrIllegalState, "failed to unlock penalty: {}", e))?;
+            .map_err(|e| {
+                e.downcast_default(ExitCode::ErrIllegalState, "failed to unlock penalty")
+            })?;
 
         penalty_total = &penalty_from_vesting + penalty_from_balance;
         pledge_delta_total -= penalty_from_vesting;
